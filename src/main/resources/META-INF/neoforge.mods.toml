@@ -1,10 +1,11 @@
-modLoader="javafml"
-loaderVersion="[43,)"
+modLoader = "javafml"
+loaderVersion = "[4,)"
 issueTrackerURL="https://github.com/Tamaized/BeatDownStick/issues"
 license="MIT License"
+
 [[mods]]
 modId="beatdownstick"
-version="${version}"
+version = "${file.jarVersion}"
 displayName="Beat Down Stick"
 credits=""
 authors="Tamaized"
@@ -13,15 +14,15 @@ Adds a Stick called the Beat Down Stick to annihilate your foes, including Creat
 '''
 
 [[dependencies.beatdownstick]]
-    modId="forge"
-    mandatory=true
-    versionRange="[43.1.23,)"
-    ordering="NONE"
-    side="BOTH"
+modId = "neoforge"
+type = "required"
+versionRange = "[21.0.143,)"
+ordering = "NONE"
+side = "BOTH"
 
 [[dependencies.beatdownstick]]
-    modId="minecraft"
-    mandatory=true
-    versionRange="[1.19.2,)"
-    ordering="NONE"
-    side="BOTH"
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21]"
+ordering = "NONE"
+side = "BOTH"

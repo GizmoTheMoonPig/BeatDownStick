@@ -1,91 +1,9 @@
-buildscript {
-    repositories {
-        maven { url = 'https://files.minecraftforge.net/maven' }
-        mavenCentral()
-    }
-    dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
-    }
-}
-apply plugin: 'net.minecraftforge.gradle'
-apply plugin: 'eclipse'
-apply plugin: 'maven-publish'
-
-version = "${artifactor_minecraft_version}-${artifactor_mod_version}." + (hasProperty("CIVersion") ? CIVersion : mod_version)
-group = "tamaized.beatdownstick"
-archivesBaseName = "BeatDownStick"
-
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-
-minecraft {
-    mappings("${project.mapping_type}", "${project.mapping_version}")
-    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
-
-    runs {
-        client {
-            workingDirectory project.file('run')
-
-            // Recommended logging data for a userdev environment
-            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-
-            // Recommended logging level for the console
-            property 'forge.logging.console.level', 'debug'
-
-            mods {
-                beatdownstick {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        server {
-            workingDirectory project.file('run')
-
-            // Recommended logging data for a userdev environment
-            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-
-            // Recommended logging level for the console
-            property 'forge.logging.console.level', 'debug'
-
-            mods {
-                beatdownstick {
-                    source sourceSets.main
-                }
-            }
-        }
-    }
-}
-
-repositories {
-    maven {
-        url = "https://maven.blamejared.com/mezz/jei/" // JEI
-    }
-}
-
-dependencies {
-    minecraft "net.minecraftforge:forge:${project.artifactor_minecraft_version}-${project.artifactor_forge_version}"
-
-//    implementation fg.deobf("mezz.jei:${project.jei_version}")
-}
-
-processResources {
-    filesMatching("META-INF/mods.toml") {
-        expand([
-                'version': "${project.version}"
-        ])
-    }
-}
-
-jar {
-    manifest {
-        attributes(["Specification-Title"     : "BeatDownStick",
-                    "Specification-Vendor"    : "Tamaized",
-                    "Specification-Version"   : "${version}",
-                    "Implementation-Title"    : project.name,
-                    "Implementation-Version"  : "${version}",
-                    "Implementation-Vendor"   : "Tamaized",
-                    "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")],)
-    }
+plugins {
+    id 'java-library'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '1.0.1'
 }
 
 def secrets = new Properties()
@@ -105,20 +23,83 @@ if (secretsFile.exists()) {
     }
 }
 
-jar.finalizedBy('reobfJar')
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
+version = "${project.minecraft_version}-${project.mod_version}." + (hasProperty("CIVersion") ? CIVersion : '0')
+group = 'tamaized.beatdownstick'
+base {
+    archivesName = "BeatDownStick"
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+compileJava.options.compilerArgs << "-Xlint:all,-classfile,-processing,-deprecation,-this-escape" << "-Werror"
+
+neoForge {
+    version = project.neoforge_version
+
+    runs {
+        configureEach {
+            gameDirectory = project.file('run')
+            systemProperty 'forge.logging.console.level', 'debug'
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+
+        client {
+            client()
+            systemProperty 'forge.enabledGameTestNamespaces', modid
+            programArguments.addAll '--username', secrets.getProperty("username") ?: 'Dev', secrets.getProperty("uuid") ? '--uuid' : '', secrets.getProperty("uuid") ?: ''
+        }
+
+        server {
+            server()
+            systemProperty 'forge.enabledGameTestNamespaces', modid
+            programArgument '--nogui'
+        }
+
+        data {
+            data()
+            programArguments.addAll '--mod', modid, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+    }
+
+    mods {
+        obtrophies {
+            sourceSet this.sourceSets.main
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes(["Specification-Title"     : "BeatDownStick",
+                    "Specification-Vendor"    : "Tamaized",
+                    "Specification-Version"   : "${version}",
+                    "Implementation-Title"    : project.name,
+                    "Implementation-Version"  : "${version}",
+                    "Implementation-Vendor"   : "Tamaized",
+                    "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")],)
+    }
+}
 
 def mavenUser = hasProperty("CIMUser") ? CIMUser : secrets.getProperty("maven_username")
 def mavenToken = hasProperty("CIMToken") ? CIMToken : secrets.getProperty("maven_password")
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
+        create('mavenJava', MavenPublication) {
             afterEvaluate {
                 artifact project.jar
                 artifact project.sourceJar
             }
-            setGroupId 'tamaized'
-            setArtifactId 'beatdownstick'
+            groupId 'tamaized'
+            artifactId 'beatdownstick'
         }
     }
     repositories {
@@ -132,15 +113,12 @@ publishing {
     }
 }
 
-task sourceJar(type: Jar, dependsOn: 'classes') {
+tasks.register('sourceJar', Jar) {
+    dependsOn 'classes'
     from sourceSets.main.allSource
-    classifier = 'sources'
+    archiveClassifier = 'sources'
 }
 
-task incrBuildNum doLast {
-    ant.propertyfile(file: "gradle.properties") {
-        entry(key: "mod_version", value: Integer.parseInt(project.mod_version) + 1)
-    }
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
 }
-
-build.finalizedBy(incrBuildNum)

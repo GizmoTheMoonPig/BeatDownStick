@@ -1,17 +1,16 @@
-package tamaized.beatdownstick.common.items;
+package tamaized.beatdownstick;
 
 import net.minecraft.network.protocol.game.ClientboundAnimatePacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraftforge.entity.PartEntity;
-import tamaized.beatdownstick.BeatDownStick;
+import net.neoforged.neoforge.entity.PartEntity;
 
 public class ItemBeatDownStick extends Item {
 
@@ -47,7 +46,7 @@ public class ItemBeatDownStick extends Item {
 		}
 		if (flag) {
 			if (!player.getAbilities().instabuild && !this.superStick)
-				stack.hurtAndBreak(1, player, user -> user.broadcastBreakEvent(player.swingingArm));
+				stack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
 			if (player.level() instanceof ServerLevel server) {
 				server.getChunkSource().broadcastAndSend(player, new ClientboundAnimatePacket(entity, 5));
 			}
@@ -57,22 +56,12 @@ public class ItemBeatDownStick extends Item {
 	}
 
 	@Override
-	public boolean isFoil(ItemStack stack) {
-		return superStick || super.isFoil(stack);
-	}
-
-	@Override
 	public boolean isEnchantable(ItemStack stack) {
 		return false;
 	}
 
 	@Override
 	public boolean isBookEnchantable(ItemStack stack, ItemStack book) {
-		return false;
-	}
-
-	@Override
-	public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
 		return false;
 	}
 

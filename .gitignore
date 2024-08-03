@@ -15,5 +15,6 @@
 !gradle.properties
 !discord.properties
 !maven.properties
+!settings.gradle
 !LICENSE
 !README.md
